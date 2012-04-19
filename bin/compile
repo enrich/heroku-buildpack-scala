@@ -131,3 +131,8 @@ for DIR in $CACHED_DIRS ; do
   mkdir -p $CACHE_DIR/$DIR
   cp -r $DIR/.  $CACHE_DIR/$DIR
 done
+
+# shrink the slug.
+# see https://groups.google.com/forum/?fromgroups#!topic/play-framework/R_BbIomWsqI
+echo "-----> Dropping ivy cache from the slug" 
+rm -rf $SBT_USER_HOME/.ivy2 
