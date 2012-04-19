@@ -4,6 +4,8 @@
 # fail fast
 set -e
 
+echo "starting the buildpack"
+
 BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
 
 # parse args
@@ -21,6 +23,8 @@ SBT_BINDIR="$SBT_USER_HOME"/bin
 
 # chdir as sbt expects
 cd $BUILD_DIR
+
+echo "unpack the cache"
 
 # unpack cache
 CACHED_DIRS="$SBT_USER_HOME/.ivy2 $SBT_BINDIR"
@@ -71,6 +75,9 @@ if [ ! -d .ivy2/cache ]; then
    mkdir -p .ivy2/cache
 fi
 
+echo "building"
+
+
 if [ ! -f "$SBT_BINDIR"/"$SBT_JAR" ]; then
   mkdir -p "$SBT_BINDIR"
   cd "$SBT_BINDIR"
@@ -98,22 +105,25 @@ if [ ! -f "$SBT_BINDIR"/"$SBT_JAR" ]; then
   cd $BUILD_DIR
 fi
 
+echo "copying"
+
+
 #copy the sbt script (do this every time so we can change it if necessary,
 #for example if switching sbt version, or just updates to the script)
 cp "$BIN_DIR/../opt/sbt-$SBT_VERSION" "$SBT_BINDIR"/sbt
 
-#echo -n "-----> Installing sbt.boot.properties..."
+echo -n "-----> Installing sbt.boot.properties..."
 curl --silent --max-time 10 --location $SBT_PROPS_URL --output "$SBT_BINDIR"/sbt.boot.properties
-#echo " done"
+echo " done"
 
 
-#echo -n "-----> Intsalling plugins..."
+echo -n "-----> Intsalling plugins..."
 HEROKU_PLUGIN="Heroku-$SBT_VERSION.scala"
 mkdir -p "$SBT_USER_HOME/.sbt/plugins" && curl --silent --max-time 10 --location "http://s3.amazonaws.com/heroku-jvm-langpack-scala/$HEROKU_PLUGIN" --output "$SBT_USER_HOME/.sbt/plugins/$HEROKU_PLUGIN"
 
 HEROKU_PLUGINS_CONFIG="heroku-plugins-$SBT_VERSION.sbt"
 mkdir -p "$SBT_USER_HOME/.sbt/plugins" && curl --silent --max-time 10 --location "http://s3.amazonaws.com/heroku-jvm-langpack-scala/$HEROKU_PLUGINS_CONFIG"  --output "$SBT_USER_HOME/.sbt/plugins/$HEROKU_PLUGINS_CONFIG"
-#echo " done"
+echo " done"
 
 # build app
 echo "-----> Running: sbt $SBT_TASKS"
@@ -124,6 +134,8 @@ if [ "${PIPESTATUS[*]}" != "0 0" ]; then
   exit 1
 fi
 
+echo "repack the cache"
+
 # repack cache
 mkdir -p $CACHE_DIR
 for DIR in $CACHED_DIRS ; do
@@ -132,7 +144,13 @@ for DIR in $CACHED_DIRS ; do
   cp -r $DIR/.  $CACHE_DIR/$DIR
 done
 
+echo "shrink the slug"
+
 # shrink the slug.
 # see https://groups.google.com/forum/?fromgroups#!topic/play-framework/R_BbIomWsqI
 echo "-----> Dropping ivy cache from the slug" 
 rm -rf $SBT_USER_HOME/.ivy2 
+
+echo "all done dude!"
+
+
